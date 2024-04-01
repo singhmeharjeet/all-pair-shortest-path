@@ -1,2 +1,8 @@
-main.dSYM
+# Ignore the binary files
+*
+!/**/
+!*.*
+
+# Ignore other auto-generated files
+*.dSYM
 .vscode
