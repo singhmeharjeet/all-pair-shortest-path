@@ -1,4 +1,4 @@
-# **All Pair Shortest Path**
+<h1 align="center">All Pair Shortest Path</h1>
 
 ## Background
 
