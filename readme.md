@@ -37,3 +37,13 @@ Each path will have the following attributes:
 -   #### Distributed
 
 ## Analysis:
+
+## Credits:
+
+-   [CSV Parser](https://github.com/ben-strasser/fast-cpp-csv-parser)
+-   [Command Line Parser](https://www.sfu.ca/computing/people/faculty/alaa-alameldeen.html)
+-   [Data Set](https://github.com/neryabigon/Weighted-directed-graphs/tree/main)
+-   Contributors:
+    -   [Mehar](https://github.com/singhmeharjeet)
+    -   [Vikaram](https://github.com/vikramsodhan)
+    -   [Anh Vu](https://github.com/codingpog)
