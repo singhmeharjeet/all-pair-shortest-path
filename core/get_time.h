@@ -108,7 +108,7 @@ struct timer {
 	void reportNext() { reportTime(next()); }
 
 	void reportNext(std::string str) {
-		std::cout << str << " : ";
+				std::cout << str << " : ";
 		reportNext();
 	}
 };

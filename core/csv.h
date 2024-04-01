@@ -1118,7 +1118,7 @@ class CSVReader {
 	}
 
 	bool has_column(const std::string &name) const {
-		return col_order.end() !=
+				return col_order.end() !=
 			   std::find(col_order.begin(), col_order.end(), std::find(std::begin(column_names), std::end(column_names), name) - std::begin(column_names));
 	}
 

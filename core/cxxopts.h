@@ -1452,3 +1452,4 @@ inline const HelpGroupDetails &
 }  // namespace cxxopts
 
 #endif	// CXXOPTS_HPP_INCLUDED
+

@@ -6,3 +6,4 @@
 # Ignore other auto-generated files
 *.dSYM
 .vscode
+.DS_Store

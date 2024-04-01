@@ -23,6 +23,7 @@ struct CustomBarrier {
 
 	void wait() {
 		std::unique_lock<std::mutex> u_lock(my_mutex_);
+
 		int c = barrier_call_;
 		current_waiting_++;
 		if (current_waiting_ == num_of_threads_) {
