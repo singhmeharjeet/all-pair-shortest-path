@@ -10,8 +10,11 @@
 
 using Edge = std::tuple<int, double, int>;
 
+typedef enum { ADJ,
+			   SOL } TYPE;
 struct Graph {
 	std::vector<std::vector<double>> adj_matrix;
+	std::vector<std::vector<double>> sol_matrix;
 
 	Graph(const std::string& e_file, const int num_nodes) {
 		io::CSVReader<3> edges_file(e_file);
@@ -20,27 +23,100 @@ struct Graph {
 
 		adj_matrix.resize(num_nodes);
 		for (auto& row : adj_matrix) {
-			row.resize(num_nodes, 0);
+			row.resize(num_nodes, std::numeric_limits<double>::max());
 		}
 
 		while (edges_file.read_row(std::get<0>(edge), std::get<1>(edge), std::get<2>(edge))) {
-			// std::cout << std::get<0>(edge) << " " << std::get<1>(edge) << " " << std::get<2>(edge) << std::endl;
 			adj_matrix[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
 		}
 	}
 
-	void print() const {
-		std::cout << "Adjacency Matrix: " << std::endl;
-		for (const auto& row : adj_matrix) {
-			for (const auto& elem : row) {
-				std::cout << elem << " ";
+	void print(TYPE t = ADJ) const {
+		if (t == ADJ) {
+			std::cout << "Adjacency Matrix: " << std::endl;
+
+			for (const auto& row : adj_matrix) {
+				for (const auto& elem : row) {
+					if (elem > 1000000) {
+						std::cout << "INF ";
+						continue;
+					}
+					std::cout << elem << " ";
+				}
+				std::cout << std::endl;
 			}
-			std::cout << std::endl;
+		} else {
+			std::cout << "Solution Matrix: " << std::endl;
+			for (const auto& row : sol_matrix) {
+				for (const auto& elem : row) {
+					std::cout << elem << " ";
+				}
+				std::cout << std::endl;
+			}
+		}
+	}
+
+	void floydWarshall() {
+		int V = adj_matrix.size();
+		double dist[V][V];
+
+		int i, j, k;
+
+		/* Initialize the solution matrix same as input graph
+		   matrix. Or we can say the initial values of shortest
+		   distances are based
+		   on shortest paths considering no intermediate vertex.
+		 */
+		for (i = 0; i < V; i++)
+			for (j = 0; j < V; j++)
+				dist[i][j] = adj_matrix[i][j];
+
+		/* Add all vertices one by one to the set of
+		  intermediate vertices.
+		  ---> Before start of a iteration, we have shortest
+		  distances between all pairs of vertices such that the
+		  shortest distances consider only the vertices in set
+		  {0, 1, 2, .. k-1} as intermediate vertices.
+		  ----> After the end of a iteration, vertex no. k is
+		  added to the set of
+		  intermediate vertices and the set becomes {0, 1, 2, ..
+		  k} */
+		for (k = 0; k < V; k++) {
+			// Pick all vertices as source one by one
+			for (i = 0; i < V; i++) {
+				// Pick all vertices as destination for the
+				// above picked source
+				for (j = 0; j < V; j++) {
+					// If vertex k is on the shortest path from
+					// i to j, then update the value of
+					// dist[i][j]
+					if (dist[i][k] + dist[k][j] < dist[i][j])
+						dist[i][j] = dist[i][k] + dist[k][j];
+				}
+			}
+		}
+
+		sol_matrix.resize(V);
+
+		for (i = 0; i < V; i++) {
+			sol_matrix[i].resize(V, 0);
+		}
+		std::cout << "Following matrix shows the shortest distances"
+					 " between every pair of vertices \n";
+
+		for (i = 0; i < V; i++) {
+			for (j = 0; j < V; j++) {
+				sol_matrix[i][j] = dist[i][j];
+				// sol_matrix[i][j] = 1;
+				// std::cout << std::setw(2) << dist[i][j] << " ";
+			}
+			// std::cout << std::endl;
 		}
 	}
 };
 
 int main(int argc, char* argv[]) {
+	std::cout << std::setprecision(2);
 	cxxopts::Options options(
 		"main_serial", "Calculate All Pair Shortest Path using serial execution");
 	options.add_options(
@@ -56,7 +132,9 @@ int main(int argc, char* argv[]) {
 
 	Graph graph(e_file, num_nodes);
 
-	// graph.print();
+	graph.print(ADJ);
+	graph.floydWarshall();
+	graph.print(SOL);
 
 	return 0;
 }
