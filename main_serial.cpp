@@ -8,49 +8,55 @@
 #include "core/csv.h"
 #include "core/utils.h"
 
-int main(int argc, char *argv[]) {
+using Edge = std::tuple<int, double, int>;
+
+struct Graph {
+	std::vector<std::vector<double>> adj_matrix;
+
+	Graph(const std::string& e_file, const int num_nodes) {
+		io::CSVReader<3> edges_file(e_file);
+
+		Edge edge;
+
+		adj_matrix.resize(num_nodes);
+		for (auto& row : adj_matrix) {
+			row.resize(num_nodes, 0);
+		}
+
+		while (edges_file.read_row(std::get<0>(edge), std::get<1>(edge), std::get<2>(edge))) {
+			// std::cout << std::get<0>(edge) << " " << std::get<1>(edge) << " " << std::get<2>(edge) << std::endl;
+			adj_matrix[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
+		}
+	}
+
+	void print() const {
+		std::cout << "Adjacency Matrix: " << std::endl;
+		for (const auto& row : adj_matrix) {
+			for (const auto& elem : row) {
+				std::cout << elem << " ";
+			}
+			std::cout << std::endl;
+		}
+	}
+};
+
+int main(int argc, char* argv[]) {
 	cxxopts::Options options(
 		"main_serial", "Calculate All Pair Shortest Path using serial execution");
 	options.add_options(
 		"", {
 				{"edgesFile", "Input graph file path", cxxopts::value<std::string>()->default_value("./input_graphs/10Edges.csv")},
-				{"nodesFile", "Input graph file path", cxxopts::value<std::string>()->default_value("./input_graphs/10Nodes.csv")},
+				{"numNodes", "Input graph file path", cxxopts::value<int>()->default_value("11")},
 			});
 
 	std::cout << std::fixed;
 	auto cl_options = options.parse(argc, argv);
 	const std::string e_file = cl_options["edgesFile"].as<std::string>();
-	const std::string n_file = cl_options["nodesFile"].as<std::string>();
+	const int num_nodes = cl_options["numNodes"].as<int>();
 
-	io::CSVReader<3> edges_file(e_file);
-	io::CSVReader<3> nodes_file(n_file);
+	Graph graph(e_file, num_nodes);
 
-	edges_file.read_header(io::ignore_no_column, "Edges/src", "Edges/w", "Edges/dest");
-	nodes_file.read_header(io::ignore_extra_column, "Pos/x", "Pos/y", "Node/id");
-
-	// edge = { src, w, dest }
-	std::tuple<int, double, int> edge;
-	// node = { x, y, id }
-	std::tuple<double, double, int> node;
-
-	auto cols = edges_file.get_column_names();
-	for (int i = 0; i < 3; i++) {
-		std::cout << cols[i] << " ";
-	}
-	std::cout << std::endl;
-
-	while (edges_file.read_row(std::get<0>(edge), std::get<1>(edge), std::get<2>(edge))) {
-		std::cout << std::get<0>(edge) << " " << std::get<1>(edge) << " " << std::get<2>(edge) << std::endl;
-	}
-
-	cols = nodes_file.get_column_names();
-	for (int i = 0; i < 3; i++) {
-		std::cout << cols[i] << " ";
-	}
-	std::cout << std::endl;
-	while (nodes_file.read_row(std::get<0>(node), std::get<1>(node), std::get<2>(node))) {
-		std::cout << std::get<0>(node) << " " << std::get<1>(node) << " " << std::get<2>(node) << std::endl;
-	}
+	// graph.print();
 
 	return 0;
 }
