@@ -23,16 +23,22 @@ struct Graph {
 
 		Edge edge;
 
+		// make the solution matrix and adjacency matrix identical
 		adj_matrix.resize(num_nodes);
-		for (auto& row : adj_matrix) {
-			row.resize(num_nodes, std::numeric_limits<double>::max());
+		sol_matrix.resize(num_nodes);
+		for (int i = 0; i < num_nodes; i++) {
+			adj_matrix[i].resize(num_nodes, std::numeric_limits<double>::max());
+			sol_matrix[i].resize(num_nodes, std::numeric_limits<double>::max());
 		}
+
 		for (int i = 0; i < num_nodes; i++) {
 			adj_matrix[i][i] = 0;
+			sol_matrix[i][i] = 0;
 		}
 
 		while (edges_file.read_row(std::get<0>(edge), std::get<1>(edge), std::get<2>(edge))) {
 			adj_matrix[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
+			sol_matrix[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
 		}
 	}
 
@@ -76,29 +82,9 @@ struct Graph {
 
 	void floydWarshall() {
 		int V = adj_matrix.size();
-		double dist[V][V];
 
 		int i, j, k;
 
-		/* Initialize the solution matrix same as input graph
-		   matrix. Or we can say the initial values of shortest
-		   distances are based
-		   on shortest paths considering no intermediate vertex.
-		 */
-		for (i = 0; i < V; i++)
-			for (j = 0; j < V; j++)
-				dist[i][j] = adj_matrix[i][j];
-
-		/* Add all vertices one by one to the set of
-		  intermediate vertices.
-		  ---> Before start of a iteration, we have shortest
-		  distances between all pairs of vertices such that the
-		  shortest distances consider only the vertices in set
-		  {0, 1, 2, .. k-1} as intermediate vertices.
-		  ----> After the end of a iteration, vertex no. k is
-		  added to the set of
-		  intermediate vertices and the set becomes {0, 1, 2, ..
-		  k} */
 		for (k = 0; k < V; k++) {
 			// Pick all vertices as source one by one
 			for (i = 0; i < V; i++) {
@@ -107,26 +93,11 @@ struct Graph {
 				for (j = 0; j < V; j++) {
 					// If vertex k is on the shortest path from
 					// i to j, then update the value of
-					// dist[i][j]
-					if (dist[i][k] + dist[k][j] < dist[i][j])
-						dist[i][j] = dist[i][k] + dist[k][j];
+					// sol_matrix[i][j]
+					if (sol_matrix[i][k] + sol_matrix[k][j] < sol_matrix[i][j])
+						sol_matrix[i][j] = sol_matrix[i][k] + sol_matrix[k][j];
 				}
 			}
-		}
-
-		sol_matrix.resize(V);
-
-		for (i = 0; i < V; i++) {
-			sol_matrix[i].resize(V, 0);
-		}
-
-		for (i = 0; i < V; i++) {
-			for (j = 0; j < V; j++) {
-				sol_matrix[i][j] = dist[i][j];
-				// sol_matrix[i][j] = 1;
-				// std::cout << std::setw(2) << dist[i][j] << " ";
-			}
-			// std::cout << std::endl;
 		}
 	}
 };
