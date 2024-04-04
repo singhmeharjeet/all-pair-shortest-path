@@ -10,8 +10,10 @@
 
 using Edge = std::tuple<int, double, int>;
 
-typedef enum { ADJ,
-			   SOL } TYPE;
+typedef enum {
+	ADJ,
+	SOL
+} TYPE;
 struct Graph {
 	std::vector<std::vector<double>> adj_matrix;
 	std::vector<std::vector<double>> sol_matrix;
@@ -25,6 +27,9 @@ struct Graph {
 		for (auto& row : adj_matrix) {
 			row.resize(num_nodes, std::numeric_limits<double>::max());
 		}
+		for (int i = 0; i < num_nodes; i++) {
+			adj_matrix[i][i] = 0;
+		}
 
 		while (edges_file.read_row(std::get<0>(edge), std::get<1>(edge), std::get<2>(edge))) {
 			adj_matrix[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
@@ -32,24 +37,37 @@ struct Graph {
 	}
 
 	void print(TYPE t = ADJ) const {
+		auto y = 0;
 		if (t == ADJ) {
 			std::cout << "Adjacency Matrix: " << std::endl;
-
+			std::cout << "\t";
+			for (int x = 0; x < adj_matrix.size(); x++) {
+				std::cout << x << "\t";
+			}
+			std::cout << std::endl;
 			for (const auto& row : adj_matrix) {
+				std::cout << y++ << "\t";
 				for (const auto& elem : row) {
 					if (elem > 1000000) {
-						std::cout << "INF ";
+						std::cout << "INF\t";
 						continue;
 					}
-					std::cout << elem << " ";
+					std::cout << elem << "\t";
 				}
 				std::cout << std::endl;
 			}
 		} else {
 			std::cout << "Solution Matrix: " << std::endl;
+			std::cout << "\t";
+			for (int x = 0; x < adj_matrix.size(); x++) {
+				std::cout << x << "\t";
+			}
+			std::cout << std::endl;
+
 			for (const auto& row : sol_matrix) {
+				std::cout << y++ << "\t";
 				for (const auto& elem : row) {
-					std::cout << elem << " ";
+					std::cout << elem << "\t";
 				}
 				std::cout << std::endl;
 			}
@@ -101,8 +119,6 @@ struct Graph {
 		for (i = 0; i < V; i++) {
 			sol_matrix[i].resize(V, 0);
 		}
-		std::cout << "Following matrix shows the shortest distances"
-					 " between every pair of vertices \n";
 
 		for (i = 0; i < V; i++) {
 			for (j = 0; j < V; j++) {
@@ -116,7 +132,8 @@ struct Graph {
 };
 
 int main(int argc, char* argv[]) {
-	std::cout << std::setprecision(2);
+	std::cout << std::fixed << std::setprecision(2);
+
 	cxxopts::Options options(
 		"main_serial", "Calculate All Pair Shortest Path using serial execution");
 	options.add_options(
@@ -125,7 +142,6 @@ int main(int argc, char* argv[]) {
 				{"numNodes", "Input graph file path", cxxopts::value<int>()->default_value("11")},
 			});
 
-	std::cout << std::fixed;
 	auto cl_options = options.parse(argc, argv);
 	const std::string e_file = cl_options["edgesFile"].as<std::string>();
 	const int num_nodes = cl_options["numNodes"].as<int>();
