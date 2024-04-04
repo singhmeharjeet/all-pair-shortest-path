@@ -45,5 +45,5 @@ Each path will have the following attributes:
 -   [Data Set](https://github.com/neryabigon/Weighted-directed-graphs/tree/main)
 -   Contributors:
     -   [Mehar](https://github.com/singhmeharjeet)
-    -   [Vikaram](https://github.com/vikramsodhan)
+    -   [Vikram](https://github.com/vikramsodhan)
     -   [Anh Vu](https://github.com/codingpog)
