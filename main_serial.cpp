@@ -13,9 +13,14 @@
 using Edge = std::tuple<int, double, int>;
 
 class Graph {
-	std::vector<std::vector<double>> sol;
+	std::vector<double> sol;
 	std::string e_file;
 	int num_nodes;
+
+	inline const int at(const int i, const int j) const {
+		// for speed purposes
+		return i * num_nodes + j;
+	}
 
 	bool validateInputs() const {
 		if (num_nodes <= 0) {
@@ -42,15 +47,14 @@ class Graph {
 
 		io::CSVReader<3> edges_file(e_file);
 
-		sol.resize(num_nodes);
+		sol.resize(num_nodes * num_nodes, std::numeric_limits<double>::max());
 		for (int i = 0; i < num_nodes; i++) {
-			sol[i].resize(num_nodes, std::numeric_limits<double>::max());
-			sol[i][i] = 0;
+			sol[at(i, i)] = 0;
 		}
 
 		Edge edge;
 		while (edges_file.read_row(std::get<0>(edge), std::get<1>(edge), std::get<2>(edge))) {
-			sol[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
+			sol[at(std::get<0>(edge), std::get<2>(edge))] = std::get<1>(edge);
 		}
 	}
 
@@ -65,15 +69,15 @@ class Graph {
 		}
 
 		std::cout << "\t";
-		for (int x = 0; x < sol.size(); x++) {
+		for (int x = 0; x < num_nodes; x++) {
 			std::cout << x << "\t";
 		}
 		std::cout << std::endl;
 
-		auto y = 0;
-		for (const auto& row : sol) {
-			std::cout << y++ << "\t";
-			for (const auto& elem : row) {
+		for (int i = 0; i < num_nodes; i++) {
+			std::cout << i << "\t";
+			for (int j = 0; j < num_nodes; j++) {
+				const auto elem = sol[at(i, j)];
 				if (elem > 1000000) {
 					std::cout << "INF\t";
 					continue;
@@ -89,21 +93,23 @@ class Graph {
 			return;
 		}
 
-		int V = sol.size();
-
 		int i, j, k;
 
-		for (k = 0; k < V; k++) {
+		for (k = 0; k < num_nodes; k++) {
 			// Pick all vertices as source one by one
-			for (i = 0; i < V; i++) {
+			for (i = 0; i < num_nodes; i++) {
 				// Pick all vertices as destination for the
 				// above picked source
-				for (j = 0; j < V; j++) {
+				for (j = 0; j < num_nodes; j++) {
 					// If vertex k is on the shortest path from
 					// i to j, then update the value of
 					// sol_matrix[i][j]
-					if (sol[i][k] + sol[k][j] < sol[i][j])
-						sol[i][j] = sol[i][k] + sol[k][j];
+					const auto sum = sol[at(i, k)] + sol[at(k, j)];
+					auto& val = sol[at(i, j)];
+
+					if (sum < val) {
+						val = sum;
+					}
 				}
 			}
 		}
