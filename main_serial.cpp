@@ -1,8 +1,10 @@
+#include <assert.h>
 #include <stdlib.h>
 
 #include <iomanip>
 #include <iostream>
 #include <thread>
+#include <tuple>
 #include <vector>
 
 #include "core/csv.h"
@@ -10,78 +12,80 @@
 
 using Edge = std::tuple<int, double, int>;
 
-typedef enum {
-	ADJ,
-	SOL
-} TYPE;
 struct Graph {
-	std::vector<std::vector<double>> adj_matrix;
-	std::vector<std::vector<double>> sol_matrix;
+	std::vector<std::vector<double>> sol;
+	std::string e_file;
+	int num_nodes;
 
 	Graph(const std::string& e_file, const int num_nodes) {
+		this->e_file = e_file;
+		this->num_nodes = num_nodes;
+	}
+	bool validateInputs() const {
+		if (num_nodes <= 0) {
+			std::cerr << "Number of nodes should be greater than 0" << std::endl;
+			return false;
+		}
+		if (e_file.empty()) {
+			std::cerr << "Edges file path should not be empty" << std::endl;
+			return false;
+		}
+		return true;
+	}
+	void read() {
+		if (!validateInputs()) {
+			return;
+		}
+
 		io::CSVReader<3> edges_file(e_file);
 
+		sol.resize(num_nodes);
+		for (int i = 0; i < num_nodes; i++) {
+			sol[i].resize(num_nodes, std::numeric_limits<double>::max());
+			sol[i][i] = 0;
+		}
+
 		Edge edge;
-
-		// make the solution matrix and adjacency matrix identical
-		adj_matrix.resize(num_nodes);
-		sol_matrix.resize(num_nodes);
-		for (int i = 0; i < num_nodes; i++) {
-			adj_matrix[i].resize(num_nodes, std::numeric_limits<double>::max());
-			sol_matrix[i].resize(num_nodes, std::numeric_limits<double>::max());
-		}
-
-		for (int i = 0; i < num_nodes; i++) {
-			adj_matrix[i][i] = 0;
-			sol_matrix[i][i] = 0;
-		}
-
 		while (edges_file.read_row(std::get<0>(edge), std::get<1>(edge), std::get<2>(edge))) {
-			adj_matrix[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
-			sol_matrix[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
+			sol[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
 		}
 	}
+	void print() const {
+		if (sol.empty()) {
+			std::cerr << "Solution matrix is empty, Please Read first" << std::endl;
+			return;
+		}
 
-	void print(TYPE t = ADJ) const {
+		if (!validateInputs()) {
+			return;
+		}
+
+		std::cout << "\t";
+		for (int x = 0; x < sol.size(); x++) {
+			std::cout << x << "\t";
+		}
+		std::cout << std::endl;
+
 		auto y = 0;
-		if (t == ADJ) {
-			std::cout << "Adjacency Matrix: " << std::endl;
-			std::cout << "\t";
-			for (int x = 0; x < adj_matrix.size(); x++) {
-				std::cout << x << "\t";
+		for (const auto& row : sol) {
+			std::cout << y++ << "\t";
+			for (const auto& elem : row) {
+				if (elem > 1000000) {
+					std::cout << "INF\t";
+					continue;
+				}
+				std::cout << elem << "\t";
 			}
 			std::cout << std::endl;
-			for (const auto& row : adj_matrix) {
-				std::cout << y++ << "\t";
-				for (const auto& elem : row) {
-					if (elem > 1000000) {
-						std::cout << "INF\t";
-						continue;
-					}
-					std::cout << elem << "\t";
-				}
-				std::cout << std::endl;
-			}
-		} else {
-			std::cout << "Solution Matrix: " << std::endl;
-			std::cout << "\t";
-			for (int x = 0; x < adj_matrix.size(); x++) {
-				std::cout << x << "\t";
-			}
-			std::cout << std::endl;
-
-			for (const auto& row : sol_matrix) {
-				std::cout << y++ << "\t";
-				for (const auto& elem : row) {
-					std::cout << elem << "\t";
-				}
-				std::cout << std::endl;
-			}
 		}
 	}
 
 	void floydWarshall() {
-		int V = adj_matrix.size();
+		if (!validateInputs()) {
+			return;
+		}
+
+		int V = sol.size();
 
 		int i, j, k;
 
@@ -94,8 +98,8 @@ struct Graph {
 					// If vertex k is on the shortest path from
 					// i to j, then update the value of
 					// sol_matrix[i][j]
-					if (sol_matrix[i][k] + sol_matrix[k][j] < sol_matrix[i][j])
-						sol_matrix[i][j] = sol_matrix[i][k] + sol_matrix[k][j];
+					if (sol[i][k] + sol[k][j] < sol[i][j])
+						sol[i][j] = sol[i][k] + sol[k][j];
 				}
 			}
 		}
@@ -119,9 +123,12 @@ int main(int argc, char* argv[]) {
 
 	Graph graph(e_file, num_nodes);
 
-	graph.print(ADJ);
+	graph.read();
+	std::cout << "Solution Matrix before Floyd Warshall" << std::endl;
+	graph.print();
 	graph.floydWarshall();
-	graph.print(SOL);
+	std::cout << "\nSolution Matrix after Floyd Warshall" << std::endl;
+	graph.print();
 
 	return 0;
 }
