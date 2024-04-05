@@ -12,15 +12,11 @@
 
 using Edge = std::tuple<int, double, int>;
 
-struct Graph {
+class Graph {
 	std::vector<std::vector<double>> sol;
 	std::string e_file;
 	int num_nodes;
 
-	Graph(const std::string& e_file, const int num_nodes) {
-		this->e_file = e_file;
-		this->num_nodes = num_nodes;
-	}
 	bool validateInputs() const {
 		if (num_nodes <= 0) {
 			std::cerr << "Number of nodes should be greater than 0" << std::endl;
@@ -32,6 +28,13 @@ struct Graph {
 		}
 		return true;
 	}
+
+	public:
+	Graph(const std::string& e_file, const int num_nodes) {
+		this->e_file = e_file;
+		this->num_nodes = num_nodes;
+	}
+
 	void read() {
 		if (!validateInputs()) {
 			return;
@@ -50,6 +53,7 @@ struct Graph {
 			sol[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
 		}
 	}
+
 	void print() const {
 		if (sol.empty()) {
 			std::cerr << "Solution matrix is empty, Please Read first" << std::endl;
