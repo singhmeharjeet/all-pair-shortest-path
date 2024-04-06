@@ -15,15 +15,15 @@ using Edge = std::tuple<int, double, int>;
 class Graph {
 	std::vector<double> sol;
 	std::string e_file;
-	int num_nodes;
+	int row_size;
 
 	inline const int at(const int i, const int j) const {
 		// for speed purposes
-		return i * num_nodes + j;
+		return i * row_size + j;
 	}
 
 	bool validateInputs() const {
-		if (num_nodes <= 0) {
+		if (row_size <= 0) {
 			std::cerr << "Number of nodes should be greater than 0" << std::endl;
 			return false;
 		}
@@ -37,7 +37,7 @@ class Graph {
 	public:
 	Graph(const std::string& e_file, const int num_nodes) {
 		this->e_file = e_file;
-		this->num_nodes = num_nodes;
+		this->row_size = num_nodes;
 	}
 
 	void read() {
@@ -47,8 +47,8 @@ class Graph {
 
 		io::CSVReader<3> edges_file(e_file);
 
-		sol.resize(num_nodes * num_nodes, std::numeric_limits<double>::max());
-		for (int i = 0; i < num_nodes; i++) {
+		sol.resize(row_size * row_size, std::numeric_limits<double>::max());
+		for (int i = 0; i < row_size; i++) {
 			sol[at(i, i)] = 0;
 		}
 
@@ -69,14 +69,14 @@ class Graph {
 		}
 
 		std::cout << "\t";
-		for (int x = 0; x < num_nodes; x++) {
+		for (int x = 0; x < row_size; x++) {
 			std::cout << x << "\t";
 		}
 		std::cout << std::endl;
 
-		for (int i = 0; i < num_nodes; i++) {
+		for (int i = 0; i < row_size; i++) {
 			std::cout << i << "\t";
-			for (int j = 0; j < num_nodes; j++) {
+			for (int j = 0; j < row_size; j++) {
 				const auto elem = sol[at(i, j)];
 				if (elem > 1000000) {
 					std::cout << "INF\t";
@@ -95,12 +95,12 @@ class Graph {
 
 		int i, j, k;
 
-		for (k = 0; k < num_nodes; k++) {
+		for (k = 0; k < row_size; k++) {
 			// Pick all vertices as source one by one
-			for (i = 0; i < num_nodes; i++) {
+			for (i = 0; i < row_size; i++) {
 				// Pick all vertices as destination for the
 				// above picked source
-				for (j = 0; j < num_nodes; j++) {
+				for (j = 0; j < row_size; j++) {
 					// If vertex k is on the shortest path from
 					// i to j, then update the value of
 					// sol_matrix[i][j]
