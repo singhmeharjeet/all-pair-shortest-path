@@ -8,10 +8,15 @@ serial:
 	@echo ""
 	g++ -g -std=c++11 ./main_serial.cpp -o main_serial && ./main_serial  && make clean
 
+serial_print:
+	@echo "Compiling & Running the serial file" 
+	@echo ""
+	g++ -g -std=c++11 ./main_serial.cpp -D PRINT -o main_serial && ./main_serial  && make clean
+
 serial2:
 	@echo "Compiling & Running the serial file" 
 	@echo ""
-	g++ -g -std=c++11 ./main_serial.cpp -o main_serial && ./main_serial --numNodes 10001 --edgesFile "./input_graphs/10000Edges.csv"  && make clean
+	g++ -g -std=c++11 ./main_serial.cpp -o main_serial && ./main_serial --numNodes 12 --edgesFile "./input_graphs/12Edges.csv"  && make clean
 
 parallel:
 	@echo "Compiling & Running the parallel file" 
@@ -26,4 +31,4 @@ mpi:
 clean:
 	@echo ""
 	@echo "Removing extra file"
-	rm -f *.o main_serial main_parallel main_mpi
+	rm -f *.o main_serial main_parallel main_mpi data

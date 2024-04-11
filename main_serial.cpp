@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <thread>
@@ -8,8 +9,16 @@
 #include <vector>
 
 #include "core/csv.h"
+#include "core/get_time.h"
 #include "core/utils.h"
 
+#ifdef PRINT
+const bool _print = true;
+#else
+const bool _print = false;
+#endif
+
+const auto INF = std::numeric_limits<double>::max();
 using Edge = std::tuple<int, double, int>;
 
 class Graph {
@@ -47,7 +56,7 @@ class Graph {
 
 		io::CSVReader<3> edges_file(e_file);
 
-		sol.resize(row_size * row_size, std::numeric_limits<double>::max());
+		sol.resize(row_size * row_size, INF);
 		for (int i = 0; i < row_size; i++) {
 			sol[at(i, i)] = 0;
 		}
@@ -123,22 +132,37 @@ int main(int argc, char* argv[]) {
 		"main_serial", "Calculate All Pair Shortest Path using serial execution");
 	options.add_options(
 		"", {
-				{"edgesFile", "Input graph file path", cxxopts::value<std::string>()->default_value("./input_graphs/10Edges.csv")},
-				{"numNodes", "Input graph file path", cxxopts::value<int>()->default_value("11")},
+				{"file", "Input graph file path", cxxopts::value<std::string>()->default_value("./input_graphs/10Edges.csv")},
+				{"nodes", "Number of Nodes in the file", cxxopts::value<int>()->default_value("10")},
 			});
 
 	auto cl_options = options.parse(argc, argv);
-	const std::string e_file = cl_options["edgesFile"].as<std::string>();
-	const int num_nodes = cl_options["numNodes"].as<int>();
+	const std::string e_file = cl_options["file"].as<std::string>();
+	const int num_nodes = cl_options["nodes"].as<int>();
+
+	std::cout << "Input Graph File: " << e_file << std::endl;
+	std::cout << "Number of Nodes: " << num_nodes << std::endl;
 
 	Graph graph(e_file, num_nodes);
 
 	graph.read();
-	std::cout << "Solution Matrix before Floyd Warshall" << std::endl;
-	graph.print();
+
+	if (_print) {
+		std::cout << "Solution Matrix before Floyd Warshall" << std::endl;
+		graph.print();
+	}
+
+	timer t;
+	t.start();
 	graph.floydWarshall();
-	std::cout << "\nSolution Matrix after Floyd Warshall" << std::endl;
-	graph.print();
+	auto end = t.stop();
+
+	if (_print) {
+		std::cout << "\nSolution Matrix after Floyd Warshall" << std::endl;
+		graph.print();
+	}
+
+	std::cout << "\nTime taken: " << std::setprecision(6) << end << " seconds\n";
 
 	return 0;
 }

@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <thread>
@@ -8,13 +9,17 @@
 #include <vector>
 
 #include "core/csv.h"
+#include "core/get_time.h"
 #include "core/utils.h"
 
-// 					  { src, weight, dest }
-using Edge = std::tuple<int, double, int>;
-using Arr = std::vector<double>;
+#ifdef PRINT
+const bool _print = true;
+#else
+const bool _print = false;
+#endif
 
-const double INF = std::numeric_limits<double>::max();
+const auto INF = std::numeric_limits<double>::max();
+using Edge = std::tuple<int, double, int>;
 
 class Graph {
 	std::vector<double> sol;
@@ -82,7 +87,7 @@ class Graph {
 			std::cout << i << "\t";
 			for (int j = 0; j < row_size; j++) {
 				const auto elem = sol[at(i, j)];
-				if (elem == INF) {
+				if (elem > 1000000) {
 					std::cout << "INF\t";
 					continue;
 				}
@@ -92,35 +97,30 @@ class Graph {
 		}
 	}
 
-	void PL_APSP(int size, int portion, int start, int end) {
-		for (int k = 0; k < size; ++k) {
-			for (int i = start; i < end; ++i) {
-				for (int j = 0; j < size; ++j) {
-					if (sol[at(i, k)] != INF && sol[at(k, j)] != INF) {
-						int sum = sol[at(i, k)] + sol[at(k, j)];
-						if (sol[at(i, j)] > sum) {
-							sol[at(i, j)] = sum;
-						}
+	void floydWarshall() {
+		if (!validateInputs()) {
+			return;
+		}
+
+		int i, j, k;
+
+		for (k = 0; k < row_size; k++) {
+			// Pick all vertices as source one by one
+			for (i = 0; i < row_size; i++) {
+				// Pick all vertices as destination for the
+				// above picked source
+				for (j = 0; j < row_size; j++) {
+					// If vertex k is on the shortest path from
+					// i to j, then update the value of
+					// sol_matrix[i][j]
+					const auto sum = sol[at(i, k)] + sol[at(k, j)];
+					auto& val = sol[at(i, j)];
+
+					if (sum < val) {
+						val = sum;
 					}
 				}
 			}
-		}
-	}
-
-	void computeShortestPaths() {
-		std::vector<std::thread> threads;
-		int num_threads = std::thread::hardware_concurrency();
-		const auto N = sol.size();
-		int portion = N / num_threads;
-
-		for (int t = 0; t < num_threads; ++t) {
-			int start = t * portion;
-			int end = (t == num_threads - 1) ? N : (t + 1) * portion;
-			threads.emplace_back(&Graph::PL_APSP, N, portion, start, end);
-		}
-
-		for (auto& t : threads) {
-			t.join();
 		}
 	}
 };
@@ -132,22 +132,37 @@ int main(int argc, char* argv[]) {
 		"main_serial", "Calculate All Pair Shortest Path using serial execution");
 	options.add_options(
 		"", {
-				{"edgesFile", "Input graph file path", cxxopts::value<std::string>()->default_value("./input_graphs/10Edges.csv")},
-				{"numNodes", "Input graph file path", cxxopts::value<int>()->default_value("11")},
+				{"file", "Input graph file path", cxxopts::value<std::string>()->default_value("./input_graphs/10Edges.csv")},
+				{"nodes", "Number of Nodes in the file", cxxopts::value<int>()->default_value("10")},
 			});
 
 	auto cl_options = options.parse(argc, argv);
-	const std::string e_file = cl_options["edgesFile"].as<std::string>();
-	const int num_nodes = cl_options["numNodes"].as<int>();
+	const std::string e_file = cl_options["file"].as<std::string>();
+	const int num_nodes = cl_options["nodes"].as<int>();
+
+	std::cout << "Input Graph File: " << e_file << std::endl;
+	std::cout << "Number of Nodes: " << num_nodes << std::endl;
 
 	Graph graph(e_file, num_nodes);
 
 	graph.read();
-	std::cout << "Solution Matrix before Floyd Warshall" << std::endl;
-	graph.print();
-	graph.computeShortestPaths();
-	std::cout << "\nSolution Matrix after Floyd Warshall" << std::endl;
-	graph.print();
+
+	if (_print) {
+		std::cout << "Solution Matrix before Floyd Warshall" << std::endl;
+		graph.print();
+	}
+
+	timer t;
+	t.start();
+	graph.floydWarshall();
+	auto end = t.stop();
+
+	if (_print) {
+		std::cout << "\nSolution Matrix after Floyd Warshall" << std::endl;
+		graph.print();
+	}
+
+	std::cout << "\nTime taken: " << std::setprecision(6) << end << " seconds\n";
 
 	return 0;
 }
