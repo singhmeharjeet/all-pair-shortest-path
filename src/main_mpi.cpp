@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <stdlib.h>
-
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -21,8 +20,7 @@ const bool _print = false;
 #define ROOT 0
 #define MPI_TAG 1
 #define TRUE 1
-#define FALSE 0
-#define INF INT_MAX/2     
+#define FALSE 0   
 #define MIN(A, B) (A < B) ? A : B
 
 typedef struct {
@@ -38,14 +36,9 @@ const auto INF = std::numeric_limits<double>::max();
 using Edge = std::tuple<int, double, int>;
 
 class Graph {
-	std::vector<std::vector<double>> sol;
+	std::vector<std::vector<double>> sol;	// 2D vector 
 	std::string e_file;
 	int row_size;
-
-	inline const int at(const int i, const int j) const {
-		// for speed purposes
-		return i * row_size + j;
-	}
 
 	bool validateInputs() const {
 		if (row_size <= 0) {
@@ -72,17 +65,19 @@ class Graph {
 
 		io::CSVReader<3> edges_file(e_file);
 
-		sol.resize(row_size * row_size, INF);
+		// Initialize the 2D vector
 		for (int i = 0; i < row_size; i++) {
-			
+			std::vector<double> row(row_size, INF);
+			sol.push_back(row);
 		}
+		// Set all path from any vertex i to itself to 0
 		for (int i = 0; i < row_size; i++) {
-			sol[at(i, i)] = 0;
+			sol[i][i] = 0;
 		}
 
 		Edge edge;
 		while (edges_file.read_row(std::get<0>(edge), std::get<1>(edge), std::get<2>(edge))) {
-			sol[at(std::get<0>(edge), std::get<2>(edge))] = std::get<1>(edge);
+			sol[std::get<0>(edge)][std::get<2>(edge)] = std::get<1>(edge);
 		}
 	}
 
@@ -105,7 +100,7 @@ class Graph {
 		for (int i = 0; i < row_size; i++) {
 			std::cout << i << "\t";
 			for (int j = 0; j < row_size; j++) {
-				const auto elem = sol[at(i, j)];
+				const auto elem = sol[i][j];
 				if (elem > 1000000) {
 					std::cout << "INF\t";
 					continue;
@@ -132,8 +127,8 @@ class Graph {
 					// If vertex k is on the shortest path from
 					// i to j, then update the value of
 					// sol_matrix[i][j]
-					const auto sum = sol[at(i, k)] + sol[at(k, j)];
-					auto& val = sol[at(i, j)];
+					const auto sum = sol[i][k] + sol[k][j];
+					auto& val = sol[i][j];
 
 					if (sum < val) {
 						val = sum;
