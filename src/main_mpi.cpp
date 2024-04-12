@@ -4,9 +4,9 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <thread>
 #include <tuple>
 #include <vector>
+#include <mpi.h>
 
 #include "../core/csv.h"
 #include "../core/get_time.h"
@@ -18,11 +18,27 @@ const bool _print = true;
 const bool _print = false;
 #endif
 
+#define ROOT 0
+#define MPI_TAG 1
+#define TRUE 1
+#define FALSE 0
+#define INF INT_MAX/2     
+#define MIN(A, B) (A < B) ? A : B
+
+typedef struct {
+    int rank;
+    int row, col;
+    int p, q;
+    MPI_Comm comm;
+    MPI_Comm row_comm;
+    MPI_Comm col_comm;
+} GRID_INFO;
+
 const auto INF = std::numeric_limits<double>::max();
 using Edge = std::tuple<int, double, int>;
 
 class Graph {
-	std::vector<double> sol;
+	std::vector<std::vector<double>> sol;
 	std::string e_file;
 	int row_size;
 
@@ -57,6 +73,9 @@ class Graph {
 		io::CSVReader<3> edges_file(e_file);
 
 		sol.resize(row_size * row_size, INF);
+		for (int i = 0; i < row_size; i++) {
+			
+		}
 		for (int i = 0; i < row_size; i++) {
 			sol[at(i, i)] = 0;
 		}
