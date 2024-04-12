@@ -1,9 +1,9 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include <chrono>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <tuple>
 #include <vector>
@@ -18,7 +18,11 @@ const bool _print = true;
 const bool _print = false;
 #endif
 
+
+const int NUM_THREADS = 4;
+CustomBarrier barrier(NUM_THREADS);
 const auto INF = std::numeric_limits<double>::max();
+std::mutex mtx;
 using Edge = std::tuple<int, double, int>;
 
 class Graph {
@@ -57,6 +61,7 @@ class Graph {
 		io::CSVReader<3> edges_file(e_file);
 
 		sol.resize(row_size * row_size, INF);
+
 		for (int i = 0; i < row_size; i++) {
 			sol[at(i, i)] = 0;
 		}
@@ -97,29 +102,32 @@ class Graph {
 		}
 	}
 
+	void worker(int tid, int k, int i_start, int i_end, int j_start, int j_end) {
+		for (int i = i_start; i < i_end; i++) {
+			std::vector<double> row(j_end - j_start, INF);
+			for (int j = j_start; j < j_end; j++) {
+				sol[at(i, j)] = std::min(sol[at(i, j)], sol[at(i, k)] + sol[at(k, j)]);
+			}
+		}
+	}
+
 	void floydWarshall() {
 		if (!validateInputs()) {
 			return;
 		}
 
-		int i, j, k;
+		const int chunk_size = row_size / NUM_THREADS;
 
-		for (k = 0; k < row_size; k++) {
-			// Pick all vertices as source one by one
-			for (i = 0; i < row_size; i++) {
-				// Pick all vertices as destination for the
-				// above picked source
-				for (j = 0; j < row_size; j++) {
-					// If vertex k is on the shortest path from
-					// i to j, then update the value of
-					// sol_matrix[i][j]
-					const auto sum = sol[at(i, k)] + sol[at(k, j)];
-					auto& val = sol[at(i, j)];
-
-					if (sum < val) {
-						val = sum;
-					}
-				}
+		std::vector<std::thread> threads(NUM_THREADS);
+		for (int k = 0; k < row_size; k++) {
+			for (int i = 0; i < NUM_THREADS; i++) {
+				threads[i] = std::thread(
+					&Graph::worker,
+					this,
+					i, k, i * chunk_size, (i + 1) * chunk_size, 0, row_size);
+			}
+			for (auto& t : threads) {
+				t.join();
 			}
 		}
 	}
@@ -129,7 +137,7 @@ int main(int argc, char* argv[]) {
 	std::cout << std::fixed << std::setprecision(2);
 
 	cxxopts::Options options(
-		"main_serial", "Calculate All Pair Shortest Path using serial execution");
+		"main_parallel", "Calculate All Pair Shortest Path using parallel execution");
 	options.add_options(
 		"", {
 				{"file", "Input graph file path", cxxopts::value<std::string>()->default_value("./input_graphs/10Edges.csv")},
