@@ -115,14 +115,17 @@ class Graph {
 		}
 
 		const int chunk_size = row_size / NUM_THREADS;
+		auto new_chunk_size = chunk_size;
+		auto leftover = row_size % NUM_THREADS;
 
 		std::vector<std::thread> threads(NUM_THREADS);
 		for (int k = 0; k < row_size; k++) {
 			for (int i = 0; i < NUM_THREADS; i++) {
+				new_chunk_size += leftover-- > 0 ? 1 : 0;
 				threads[i] = std::thread(
 					&Graph::worker,
 					this,
-					i, k, i * chunk_size, (i + 1) * chunk_size, 0, row_size);
+					i, k, i* new_chunk_size, (i + 1) * new_chunk_size, 0, row_size);
 			}
 			for (auto& t : threads) {
 				t.join();

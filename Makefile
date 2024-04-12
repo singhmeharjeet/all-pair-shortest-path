@@ -1,13 +1,13 @@
 all: serial parallel mpi
 
 serial:
-	g++ -g -std=c++11 ./main_serial.cpp -D PRINT -o ./build/main_serial -l pthread
+	g++ -g -std=c++11 ./src/main_serial.cpp -D PRINT -o ./build/main_serial -l pthread
 
 parallel:
-	g++ -g -std=c++11 ./main_parallel.cpp -D PRINT -o ./build/main_parallel -l pthread
+	g++ -g -std=c++11 ./src/main_parallel.cpp -D PRINT -o ./build/main_parallel -l pthread
 
 mpi:
-	g++ -g -std=c++11 ./main_mpi.cpp -D PRINT -o ./build/main_mpi -l pthread
+	g++ -g -std=c++11 ./src/main_mpi.cpp -D PRINT -o ./build/main_mpi -l pthread
 
 datamaker:
 	g++ -std=c++11 datamaker.cpp -o data; ./data --nodes 100
