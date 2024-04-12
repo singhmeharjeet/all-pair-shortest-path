@@ -1,41 +1,30 @@
-TARGET = app
-
-all:
-	g++ -g -std=c++11 ./main_serial.cpp -o main_serial
-	g++ -g -std=c++11 ./main_parallel.cpp -o main_parallel
-	g++ -g -std=c++11 ./main_mpi.cpp -o main_mpi
+all: serial parallel mpi
 
 serial:
-	@echo "Compiling & Running the serial file" 
-	@echo ""
-	g++ -g -std=c++11 ./main_serial.cpp -o main_serial && ./main_serial
-
-serial_print:
-	@echo "Compiling & Running the serial file" 
-	@echo ""
-	g++ -g -std=c++11 ./main_serial.cpp -D PRINT -o main_serial && ./main_serial
-
-serial2:
-	@echo "Compiling & Running the serial file" 
-	@echo ""
-	g++ -g -std=c++11 ./main_serial.cpp -o main_serial && ./main_serial --numNodes 12 --edgesFile "./input_graphs/12Edges.csv"
+	g++ -g -std=c++11 ./main_serial.cpp -D PRINT -o ./build/main_serial -l pthread
 
 parallel:
-	@echo "Compiling & Running the parallel file" 
-	@echo ""
-	g++ -g -std=c++11 ./main_parallel.cpp -o main_parallel && ./main_parallel
-
-parallel_print:
-	@echo "Compiling & Running the parallel file" 
-	@echo ""
-	g++ -g -std=c++11 ./main_parallel.cpp -D PRINT -o main_parallel && ./main_parallel
+	g++ -g -std=c++11 ./main_parallel.cpp -D PRINT -o ./build/main_parallel -l pthread
 
 mpi:
-	@echo "Compiling & Running the mpi file" 
-	@echo ""
-	g++ -g -std=c++11 ./main_mpi.cpp -o main_mpi && ./main_mpi
+	g++ -g -std=c++11 ./main_mpi.cpp -D PRINT -o ./build/main_mpi -l pthread
+
+datamaker:
+	g++ -std=c++11 datamaker.cpp -o data; ./data --nodes 100
+
+serial_500:
+	./build/main_serial --nodes 500 --file "./input_graphs/500Edges.csv" > ./out/serial_500.txt
+
+serial_1000:
+	./build/main_serial --nodes 1000 --file "./input_graphs/1000Edges.csv" > ./out/serial_1000.txt
+
+parallel_500:
+	./build/main_parallel --nodes 500 --file "./input_graphs/500Edges.csv" > ./out/parallel_500.txt
+
+parallel_1000:
+	./build/main_parallel --nodes 1000 --file "./input_graphs/1000Edges.csv" > ./out/parallel_1000.txt
 
 clean:
-	@echo ""
-	@echo "Removing extra file"
-	rm -f *.o main_serial main_parallel main_mpi data
+	rm -f -r ./build/*
+	rm -f ./out/*.txt
+
