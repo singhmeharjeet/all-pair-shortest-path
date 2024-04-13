@@ -133,7 +133,7 @@ inline void floyd_warshall(int row_size, std::vector<double> &sol);
 void print_mtrx(double *mtrx, int row_size);
 void read_args(int argc, char **argv, std::string &e_file, int &num_nodes);
 void read_csv(const GRID_INFO &grid, Graph &graph);
-bool send_chunks(GRID_INFO &grid, Graph &graph);
+bool send_chunks(GRID_INFO &grid, Graph &graph, double *mtrx_A = nullptr);
 
 int main(int argc, char *argv[]) {
 	std::cout << std::fixed << std::setprecision(2);
@@ -148,20 +148,35 @@ int main(int argc, char *argv[]) {
 	initialize(argc, argv, &grid, num_nodes);
 	read_csv(grid, graph);
 
-	auto wasSerial = send_chunks(grid, graph);
+	auto chunk_size = grid.chunk_size;
+	double mtrx_A[chunk_size * chunk_size];
+
+	auto wasSerial = send_chunks(grid, graph, mtrx_A);
 	if (wasSerial) {
 		return 0;
 	}
 
-	auto chunk_size = grid.chunk_size;
+	if (grid.rank != ROOT) {
+		MPI_Recv(
+			mtrx_A, chunk_size * chunk_size,
+			MPI_DOUBLE,
+			0,
+			MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	}
 
-	double mtrx_A[chunk_size * chunk_size];
-
-	MPI_Recv(
-		mtrx_A, chunk_size * chunk_size,
-		MPI_DOUBLE,
-		0,
-		MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	if (grid.rank == ROOT) {
+		std::cout << "ROOT received the chunks\n";
+		print_mtrx(mtrx_A, chunk_size);
+	} else if (grid.rank == 1) {
+		std::cout << "1 received the chunks\n";
+		print_mtrx(mtrx_A, chunk_size);
+	} else if (grid.rank == 2) {
+		std::cout << "2 received the chunks\n";
+		print_mtrx(mtrx_A, chunk_size);
+	} else if (grid.rank == 3) {
+		std::cout << "3 received the chunks\n";
+		print_mtrx(mtrx_A, chunk_size);
+	}
 
 	double time;
 	double *mtrx_C = process_mtrx(grid, &time, mtrx_A, graph.get_row_size());
@@ -348,7 +363,7 @@ void read_csv(const GRID_INFO &grid, Graph &graph) {
 		graph.print();
 	}
 }
-bool send_chunks(GRID_INFO &grid, Graph &graph) {
+bool send_chunks(GRID_INFO &grid, Graph &graph, double *mtrx_A) {
 	if (grid.rank == ROOT) {
 		// Early exit if there is only one process (ROOT)
 		if (grid.processes == 1) {
@@ -383,11 +398,15 @@ bool send_chunks(GRID_INFO &grid, Graph &graph) {
 				}
 				// Sending & Receiving the chunks is checked; Dont change now
 				// It will send to root also to save the complexity of handling root separately
-				MPI_Send(
-					sub_mtrx, chunk_size * chunk_size,
-					MPI_DOUBLE,
-					(chunk_row * chunks_per_row) + chunk_col,
-					MPI_TAG, MPI_COMM_WORLD);
+				if (chunk_row * chunks_per_row + chunk_col == ROOT) {
+					memcpy(mtrx_A, sub_mtrx, chunk_size * chunk_size * sizeof(double));
+				} else {
+					MPI_Send(
+						sub_mtrx, chunk_size * chunk_size,
+						MPI_DOUBLE,
+						(chunk_row * chunks_per_row) + chunk_col,
+						MPI_TAG, MPI_COMM_WORLD);
+				}
 			}
 		}
 	}
