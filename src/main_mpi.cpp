@@ -124,11 +124,11 @@ class Graph {
 
 const int at(int i, int j, int n);
 void setup_grid(GRID_INFO *grid);
-int check_fox(int p, int n);
-void send_sub_mtrx(int *_mtrx, int n, int q);
-void *process_mtrx(GRID_INFO *grid, double *time, int *mtrx_A, int n);
-void floyd_warshall(int *A, int *B, int *C, int n);
-void print_mtrx(int *mtrx, int row_size);
+int is_valid_fox(int p, int n);
+void send_sub_mtrx(std::vector<double> mtrx, int n, int q);
+double *process_mtrx(GRID_INFO *grid, double *time, double *mtrx_A, int n);
+void floyd_warshall(double *A, double *B, double *C, int n);
+void print_mtrx(double *mtrx, int row_size);
 
 int main(int argc, char* argv[]) {
 	std::cout << std::fixed << std::setprecision(2);
@@ -206,7 +206,7 @@ int main(int argc, char* argv[]) {
 
 	if (grid.rank == ROOT) {
 		std::cout << "\nSolution Matrix after Floyd Warshall" << std::endl;
-		print_final(mtrx_F, n);
+		print_mtrx(mtrx_F, n);
 		fprintf(stderr, "\nExecution Time: %10.3lf milliseconds.\n\n", time * 1000);
 	}
     delete[] mtrx_F;
@@ -273,7 +273,7 @@ void send_sub_mtrx(std::vector<double> mtrx, int n, int q) {
 	delete[] sub_mtrx;
 }
 
-void *process_mtrx(GRID_INFO *grid, double *time, double *mtrx_A, int n) {
+double *process_mtrx(GRID_INFO *grid, double *time, double *mtrx_A, int n) {
 	int m = n / grid->q;
 	int src = (grid->row + 1) % grid->q;
 	int dst = (grid->row - 1 + grid->q) % grid->q;
@@ -329,7 +329,7 @@ void print_mtrx(double *mtrx, int row_size) {
 	for (int i = 0; i < row_size; i++) {
 		std::cout << i << "\t";
 		for (int j = 0; j < row_size; j++) {
-			const auto elem = mtrx_F[at(i,j,row_size)];
+			const auto elem = mtrx[at(i,j,row_size)];
 			if (elem > 1000000) {
 				std::cout << "INF\t";
 				continue;
