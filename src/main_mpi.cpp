@@ -167,13 +167,16 @@ int main(int argc, char *argv[]) {
 	if (grid.rank == ROOT) {
 		std::cout << "ROOT received the chunks\n";
 		print_mtrx(mtrx_A, chunk_size);
-	} else if (grid.rank == 1) {
+	} 
+	if (grid.rank == 1) {
 		std::cout << "1 received the chunks\n";
 		print_mtrx(mtrx_A, chunk_size);
-	} else if (grid.rank == 2) {
+	} 
+	if (grid.rank == 2) {
 		std::cout << "2 received the chunks\n";
 		print_mtrx(mtrx_A, chunk_size);
-	} else if (grid.rank == 3) {
+	} 
+	if (grid.rank == 3) {
 		std::cout << "3 received the chunks\n";
 		print_mtrx(mtrx_A, chunk_size);
 	}
@@ -182,7 +185,43 @@ int main(int argc, char *argv[]) {
 	double *mtrx_C = process_mtrx(grid, &time, mtrx_A, graph.get_row_size());
 
 	double *mtrx_F = new double[graph.get_row_size() * graph.get_row_size()];
-	MPI_Gather(mtrx_C, chunk_size * chunk_size, MPI_INT, mtrx_F, chunk_size * chunk_size, MPI_INT, ROOT, MPI_COMM_WORLD);
+
+
+	if (grid.rank == ROOT) {
+		// fill process 0 submatrix
+		for (int i = 0; i < chunk_size; i++){
+			for (int j = 0; j < chunk_size; j++){
+				mtrx_F[at(i, j, graph.get_row_size())] = mtrx_C[at(i, j, chunk_size)];
+			}
+		}
+
+		for (int i = 1; i < grid.processes; i++){
+
+			MPI_Recv(
+				mtrx_C, chunk_size * chunk_size,
+				MPI_DOUBLE,
+				i,
+				MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			
+			// Move down in rows only if the process surpasses chunks_per row.
+			int row_start = (i / grid.chunks_per_row) * chunk_size;
+			// Move to the right in cols only if the process hasn't supasses chunks per_row
+			int col_start = (i % grid.chunks_per_row) * chunk_size;
+			
+			for (int i = 0; i < chunk_size; i++){
+				for (int j = 0; j < chunk_size; j++){
+					mtrx_F[at(i + row_start, j + col_start, graph.get_row_size())] = mtrx_C[at(i, j, chunk_size)];
+				}
+			}
+		}
+	} else {
+		MPI_Send(
+						mtrx_C, chunk_size * chunk_size,
+						MPI_DOUBLE,
+						0,
+						MPI_TAG, MPI_COMM_WORLD);
+	}
+
 	delete[] mtrx_C;
 
 	// timer t;
@@ -270,7 +309,7 @@ double *process_mtrx(const GRID_INFO &grid, double *time, double *mtrx_A, int n)
 	memcpy(mtrx_C, mtrx_A, size_sqr * sizeof(double));
 
 	*time = MPI_Wtime();
-	for (auto iter = 1; iter < n; iter <<= 1) {
+	for (auto iter = 1; iter < n; iter++) {
 		memcpy(mtrx_B, mtrx_C, size_sqr * sizeof(double));
 
 		for (int stage = 0; stage < grid.chunks_per_row; stage++) {
