@@ -10,3 +10,6 @@
 .idea
 build/*
 out/*
+
+# Ignore bash files
+*.sh
