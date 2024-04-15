@@ -21,11 +21,14 @@ const bool _print = false;
 const auto INF = std::numeric_limits<double>::max();
 using Edge = std::tuple<int, double, int>;
 
+// Weighted directed graph with no negative-weighted edge
 class Graph {
+	// The graph represented as an adjacency matrix. We use a 1D array to act like a 2D array
 	std::vector<double> sol;
 	std::string e_file;
 	int row_size;
 
+	// To access a 1D array like 2D
 	inline const int at(const int i, const int j) const {
 		// for speed purposes
 		return i * row_size + j;
@@ -49,6 +52,7 @@ class Graph {
 		this->row_size = num_nodes;
 	}
 
+	// Read the input file and fill in the adjacency matrix accordingly
 	void read() {
 		if (!validateInputs()) {
 			return;
@@ -56,17 +60,21 @@ class Graph {
 
 		io::CSVReader<3> edges_file(e_file);
 
-		sol.resize(row_size * row_size, INF);
+		sol.resize(row_size * row_size, INF); // Initialize matrix with INF
+
+		// Set diagonal values to 0
 		for (int i = 0; i < row_size; i++) {
 			sol[at(i, i)] = 0;
 		}
 
+		// Read in the rest of the values from the csv file
 		Edge edge;
 		while (edges_file.read_row(std::get<0>(edge), std::get<1>(edge), std::get<2>(edge))) {
 			sol[at(std::get<0>(edge), std::get<2>(edge))] = std::get<1>(edge);
 		}
 	}
 
+	// Print the graph as an adjacency matrix
 	void print() const {
 		if (sol.empty()) {
 			std::cerr << "Solution matrix is empty, Please Read first" << std::endl;
@@ -97,6 +105,7 @@ class Graph {
 		}
 	}
 
+	// Function to convert the adjency graph to represent the shortest path for all pairs of nodes
 	void floydWarshall() {
 		if (!validateInputs()) {
 			return;
