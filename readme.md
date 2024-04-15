@@ -30,13 +30,39 @@ Each path will have the following attributes:
 
 ## Implementations
 
--   #### Serial
+-  Create a build folder to store complied files:
+``` mkdir build```
 
--   #### Parallel
+-  Create an out folder to store output files:
+``` mkdir out ```
 
--   #### Distributed
 
-## Analysis:
+#### Serial
+-  Compile serial code:
+```make serial```
+
+- To run the file "100Edges.csv" from input_graphs (the --nodes parameter is the matrix dimension, in this case, it's 100):
+```./build/main_serial --nodes 100 --file "./input_graphs/100Edges.csv" > ./out/serial_100.txt```
+
+- To run the file "10Edges.csv" from input_graphs (the --nodes parameter is the matrix dimension, in this case, it's 10):
+```./build/main_serial --nodes 10 --file "./input_graphs/10Edges.csv" > ./out/serial_10.txt```
+
+#### Parallel
+-  Compile parallel code:
+```make parallel```
+
+- To run the file "100Edges.csv" from input_graphs (the --nodes parameter is the matrix dimension, in this case, it's 100):
+```./build/main_parallel --nodes 100 --file "./input_graphs/100Edges.csv" > ./out/parallel_100.txt```
+
+- To change the number of threads, change the "NUM_THREADS" value in main_parallel.cpp
+
+#### Distributed
+-  Compile distributed code:
+```make mpi```
+
+- To run the file "100Edges.csv" from input_graphs with 4 processes (the --nodes parameter is the matrix dimension, in this case, it's 100):
+``` mpirun np - 4 ./build/main_mpi --nodes 100 --file "./input_graphs/100Edges.csv" > ./out/mpi_100.txt```
+
 
 ## Credits:
 
