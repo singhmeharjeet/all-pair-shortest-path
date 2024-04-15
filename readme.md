@@ -43,6 +43,7 @@ Each path will have the following attributes:
 -   [CSV Parser](https://github.com/ben-strasser/fast-cpp-csv-parser)
 -   [Command Line Parser](https://www.sfu.ca/computing/people/faculty/alaa-alameldeen.html)
 -   [Data Set](https://github.com/neryabigon/Weighted-directed-graphs/tree/main)
+-   [MPI Floyd-Warshall](https://github.com/nuno-azevedo/floyd-warshall-mpi/tree/master)
 -   Contributors:
     -   [Mehar](https://github.com/singhmeharjeet)
     -   [Vikram](https://github.com/vikramsodhan)
