@@ -28,7 +28,7 @@ Each path will have the following attributes:
     -   About: Cost of each edge
     -   Size: n-1
 
-## Implementations
+## Instructions
 
 -  Create a build folder to store complied files:
 ``` mkdir build```
@@ -36,6 +36,7 @@ Each path will have the following attributes:
 -  Create an out folder to store output files:
 ``` mkdir out ```
 
+-  Use the sample graphs in the input_graphs folder
 
 #### Serial
 -  Compile serial code:
