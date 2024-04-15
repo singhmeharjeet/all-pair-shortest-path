@@ -25,15 +25,15 @@ const bool _print = false;
 
 // struct to hold the necessary information of a process
 typedef struct {
-	int rank;	// global rank of a process
-	int row, col;	// row and col positions of a process in the Cartesian topology
-	int processes, processes_per_row, sub_mtrx_dimension;	// Number of processes in total, number of processes in a dimension of the Cartesian topology, dimension size of a submatrix assigned to a process
-	MPI_Comm comm;	// Cartesian topology communicator
-	MPI_Comm row_comm;	// Row communicator of the topology
-	MPI_Comm col_comm;	// Column communicaator of the topology
+	int rank;											   // global rank of a process
+	int row, col;										   // row and col positions of a process in the Cartesian topology
+	int processes, processes_per_row, sub_mtrx_dimension;  // Number of processes in total, number of processes in a dimension of the Cartesian topology, dimension size of a submatrix assigned to a process
+	MPI_Comm comm;										   // Cartesian topology communicator
+	MPI_Comm row_comm;									   // Row communicator of the topology
+	MPI_Comm col_comm;									   // Column communicaator of the topology
 } GRID_INFO;
 
-const auto INF = std::numeric_limits<double>::max();	// define infinite
+const auto INF = std::numeric_limits<double>::max();  // define infinite
 using Edge = std::tuple<int, double, int>;
 
 // Weighted directed graph with no negative-weighted edge
@@ -160,9 +160,9 @@ int main(int argc, char *argv[]) {
 	// Root sends submatrics to other processes
 	bool wasSerial;
 	if (grid.rank == ROOT) {
-		wasSerial= send_processes(grid, graph, mtrx_A); 
+		wasSerial = send_processes(grid, graph, mtrx_A);
 	}
-	if (wasSerial) {	// if there's only 1 process 
+	if (wasSerial) {  // if there's only 1 process
 		return 0;
 	}
 
@@ -176,14 +176,13 @@ int main(int argc, char *argv[]) {
 	}
 
 	double time;
-	double *mtrx_C = process_mtrx(grid, &time, mtrx_A, graph.get_mtrx_dimension());		// process assigned submatrix
+	double *mtrx_C = process_mtrx(grid, &time, mtrx_A, graph.get_mtrx_dimension());	 // process assigned submatrix
 
 	double *mtrx_F = new double[graph.get_mtrx_dimension() * graph.get_mtrx_dimension()];
 	double *mtrx_gather = new double[graph.get_mtrx_dimension() * graph.get_mtrx_dimension()];
 
 	// Gather all processed submatrices from all processes
 	MPI_Gather(mtrx_C, sub_mtrx_dimension * sub_mtrx_dimension, MPI_DOUBLE, mtrx_gather, sub_mtrx_dimension * sub_mtrx_dimension, MPI_DOUBLE, ROOT, MPI_COMM_WORLD);
-
 
 	// Gather version using send/receive
 	// if (grid.rank == ROOT) {
@@ -201,12 +200,12 @@ int main(int argc, char *argv[]) {
 	// 			MPI_DOUBLE,
 	// 			i,
 	// 			MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			
+
 	// 		// Move down in rows only if the process surpasses processes_per row.
 	// 		int row_start = (i / grid.processes_per_row) * sub_mtrx_dimension;
 	// 		// Move to the right in cols only if the process hasn't supasses processes per_row
 	// 		int col_start = (i % grid.processes_per_row) * sub_mtrx_dimension;
-			
+
 	// 		for (int i = 0; i < sub_mtrx_dimension; i++){
 	// 			for (int j = 0; j < sub_mtrx_dimension; j++){
 	// 				mtrx_F[at(i + row_start, j + col_start, graph.get_mtrx_dimension())] = mtrx_C[at(i, j, sub_mtrx_dimension)];
@@ -227,7 +226,7 @@ int main(int argc, char *argv[]) {
 	if (grid.rank == ROOT) {
 		std::cout << "\nSolution Matrix after Floyd Warshall" << std::endl;
 		fix_final_mtrx(mtrx_gather, mtrx_F, graph.get_mtrx_dimension(), grid.processes_per_row, grid.sub_mtrx_dimension);
-		print_mtrx(mtrx_F, graph.get_mtrx_dimension());
+		// print_mtrx(mtrx_F, graph.get_mtrx_dimension());
 		std::cout << "\nTime taken: " << std::setprecision(6) << time << " seconds\n";
 	}
 
@@ -308,6 +307,7 @@ double *process_mtrx(const GRID_INFO &grid, double *time, double *mtrx_A, int n)
 	const int dst = (grid.row - 1 + grid.processes_per_row) % grid.processes_per_row;
 
 	const auto size_sqr = grid.sub_mtrx_dimension * grid.sub_mtrx_dimension;
+	const auto max_iters = n < 100 ? n : 100;
 
 	double temp_A[size_sqr];
 	double mtrx_B[size_sqr];
@@ -316,21 +316,19 @@ double *process_mtrx(const GRID_INFO &grid, double *time, double *mtrx_A, int n)
 	memcpy(mtrx_C, mtrx_A, size_sqr * sizeof(double));
 
 	*time = MPI_Wtime();
-	for (auto iter = 1; iter < n; iter += 1) {		// Iterations needed to converge to the right answer
+	for (auto iter = 1; iter < max_iters; iter += 1) {	// Iterations needed to converge to the right answer
 		memcpy(mtrx_B, mtrx_C, size_sqr * sizeof(double));
 
 		for (int stage = 0; stage < grid.processes_per_row; stage++) {
 			int bcast_root = (grid.row + stage) % grid.processes_per_row;
-			if (bcast_root == grid.col) {		// If you're the root in this current stage, broadcast your submatrix to other processses in the same row and call Floyd-Warshall
+			if (bcast_root == grid.col) {  // If you're the root in this current stage, broadcast your submatrix to other processses in the same row and call Floyd-Warshall
 				MPI_Bcast(mtrx_A, size_sqr, MPI_DOUBLE, bcast_root, grid.row_comm);
-				floyd_warshall(mtrx_A, mtrx_B, mtrx_C, grid.sub_mtrx_dimension
-		);
-			} else {		// Otherwise, receive the broadcasted submatrix and call Floyd-Warshall
+				floyd_warshall(mtrx_A, mtrx_B, mtrx_C, grid.sub_mtrx_dimension);
+			} else {  // Otherwise, receive the broadcasted submatrix and call Floyd-Warshall
 				MPI_Bcast(temp_A, size_sqr, MPI_DOUBLE, bcast_root, grid.row_comm);
-				floyd_warshall(temp_A, mtrx_B, mtrx_C, grid.sub_mtrx_dimension
-		);
+				floyd_warshall(temp_A, mtrx_B, mtrx_C, grid.sub_mtrx_dimension);
 			}
-			MPI_Sendrecv_replace(mtrx_B, size_sqr, MPI_DOUBLE, dst, MPI_TAG, src, MPI_TAG, grid.col_comm, MPI_STATUS_IGNORE);	// Send your submatrix to the process above while receiving the submatrix from the process below
+			MPI_Sendrecv_replace(mtrx_B, size_sqr, MPI_DOUBLE, dst, MPI_TAG, src, MPI_TAG, grid.col_comm, MPI_STATUS_IGNORE);  // Send your submatrix to the process above while receiving the submatrix from the process below
 		}
 	}
 	*time = MPI_Wtime() - *time;
@@ -412,7 +410,7 @@ void read_csv(const GRID_INFO &grid, Graph &graph) {
 		std::cout << "Inital matrix before Floyd Warshall" << std::endl;
 
 		graph.read();
-		graph.print();
+		// graph.print();
 	}
 }
 
@@ -422,7 +420,7 @@ bool send_processes(GRID_INFO &grid, Graph &graph, double *mtrx_A) {
 	if (grid.processes == 1) {
 		timer t;
 		t.start();
-		floyd_warshall(graph.get_mtrx_dimension(), graph.get_matrix());  // serial floyd warshall
+		floyd_warshall(graph.get_mtrx_dimension(), graph.get_matrix());	 // serial floyd warshall
 		auto time = t.stop();
 
 		std::cout << "\nSolution Matrix after Floyd Warshall for 1 process:" << std::endl;
@@ -441,21 +439,17 @@ bool send_processes(GRID_INFO &grid, Graph &graph, double *mtrx_A) {
 
 	for (int sub_mtrx_row = 0; sub_mtrx_row < processes_per_row; sub_mtrx_row++) {	// Break and send to each process in the topology
 		for (int sub_mtrx_col = 0; sub_mtrx_col < processes_per_row; sub_mtrx_col++) {
-			for (int i = 0; i < sub_mtrx_dimension; i++) {		// Submatrix
+			for (int i = 0; i < sub_mtrx_dimension; i++) {	// Submatrix
 				for (int j = 0; j < sub_mtrx_dimension; j++) {
-					sub_mtrx[at(i, j, sub_mtrx_dimension)] = 
-						graph.get_matrix()[at((sub_mtrx_row * sub_mtrx_dimension) + i,(sub_mtrx_col * sub_mtrx_dimension) + j,processes_per_row * sub_mtrx_dimension)];
+					sub_mtrx[at(i, j, sub_mtrx_dimension)] =
+						graph.get_matrix()[at((sub_mtrx_row * sub_mtrx_dimension) + i, (sub_mtrx_col * sub_mtrx_dimension) + j, processes_per_row * sub_mtrx_dimension)];
 				}
 			}
 			// Sending & Receiving the processes is checked
-			// It will send to root also to save the complexity of handling root separately
 			if (sub_mtrx_row * processes_per_row + sub_mtrx_col == ROOT) {
-				memcpy(mtrx_A, sub_mtrx, sub_mtrx_dimension* sub_mtrx_dimension * sizeof(double));
+				memcpy(mtrx_A, sub_mtrx, sub_mtrx_dimension * sub_mtrx_dimension * sizeof(double));
 			} else {
-				MPI_Send(sub_mtrx, sub_mtrx_dimension * sub_mtrx_dimension,
-					MPI_DOUBLE,
-					(sub_mtrx_row * processes_per_row) + sub_mtrx_col,
-					MPI_TAG, MPI_COMM_WORLD);
+				MPI_Send(sub_mtrx, sub_mtrx_dimension * sub_mtrx_dimension, MPI_DOUBLE, (sub_mtrx_row * processes_per_row) + sub_mtrx_col, MPI_TAG, MPI_COMM_WORLD);
 			}
 		}
 	}
@@ -465,23 +459,23 @@ bool send_processes(GRID_INFO &grid, Graph &graph, double *mtrx_A) {
 
 // Reorder the submatrices recived from other processes in the final matrix
 void fix_final_mtrx(double *mtrx_to_fix, double *mtrx_F, int mtrx_dimension, int processes_per_row, int sub_mtrx_dimension) {
-    int i, j, k, l;
-    int a = 0, b = 0;
+	int i, j, k, l;
+	int a = 0, b = 0;
 	int q = processes_per_row;
 	int m = sub_mtrx_dimension;
 	int n = mtrx_dimension;
 
-    for (k = 0; k < q; k++) {
-        for (l = 0; l < q; l++) {
-            for (i = k * m; i < (k + 1) * m; i++) {
-                for (j = l * m; j < (l + 1) * m; j++) {
-                    mtrx_F[at(i, j, n)] = mtrx_to_fix[at(a, b, n)] == INF ? 0 : mtrx_to_fix[at(a, b, n)];
-                    if (++b == n) {
+	for (k = 0; k < q; k++) {
+		for (l = 0; l < q; l++) {
+			for (i = k * m; i < (k + 1) * m; i++) {
+				for (j = l * m; j < (l + 1) * m; j++) {
+					mtrx_F[at(i, j, n)] = mtrx_to_fix[at(a, b, n)] == INF ? 0 : mtrx_to_fix[at(a, b, n)];
+					if (++b == n) {
 						++a;
 						b = 0;
 					}
-                }
-            }
-        }
-    }	
+				}
+			}
+		}
+	}
 }
